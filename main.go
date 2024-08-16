@@ -78,6 +78,8 @@ func main() {
 		case "exit":
 			fmt.Println("Exiting phonebook ...")
 			return
+		default:
+			fmt.Println("Unsupported command. Try 'add', 'get', 'update', 'delete', 'list','exit'")
 		}
 	}
 }
