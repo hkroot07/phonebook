@@ -12,7 +12,7 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("PhoneBook")
-	fmt.Println("Available commands: add,get,update,exit")
+	fmt.Println("Available commands: add,get,update,list,exit")
 
 	for {
 		fmt.Print("> ")
@@ -79,7 +79,7 @@ func main() {
 			fmt.Println("Exiting phonebook ...")
 			return
 		default:
-			fmt.Println("Unsupported command. Try 'add', 'get', 'update', 'delete', 'list','exit'")
+			fmt.Println("Unsupported command. Try 'add', 'get', 'update', 'delete', 'list','exit'.")
 		}
 	}
 }
