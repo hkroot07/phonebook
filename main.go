@@ -67,6 +67,17 @@ func main() {
 			} else {
 				fmt.Println("No such entry to update.")
 			}
+		case "list":
+			if len(phoneBook) == 0 {
+				fmt.Println("Phonebook is empty.")
+			} else {
+				for name, number := range phoneBook {
+					fmt.Printf("%s -> %s\n", name, number)
+				}
+			}
+		case "exit":
+			fmt.Println("Exiting phonebook ...")
+			return
 		}
 	}
 }
