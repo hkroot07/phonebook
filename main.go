@@ -43,6 +43,15 @@ func main() {
 			} else {
 				fmt.Printf("No entry found for %s\n", name)
 			}
+		case "delete":
+			name := parts[1]
+			_, exists := phonebook[name]
+			if exists {
+				delete(phonebook, name)
+				fmt.Printf("Deleted entry for %s\n", name)
+			} else {
+				fmt.Printf("No entry to delete for %s\n", name)
+			}
 
 		}
 	}
