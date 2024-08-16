@@ -34,6 +34,16 @@ func main() {
 			name, number := kv[0], kv[1]
 			phonebook[name] = number
 			fmt.Printf("Added/Updated: %s -> %s\n", name, number)
+		case "get":
+			// get alice
+			name := parts[1]
+			number, exists := phonebook[name]
+			if exists {
+				fmt.Printf("Number for %s is %s\n", name, number)
+			} else {
+				fmt.Printf("No entry found for %s\n", name)
+			}
+
 		}
 	}
 }
