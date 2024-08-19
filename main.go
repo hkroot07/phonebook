@@ -2,17 +2,21 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
+	"phonebook/book"
+	"phonebook/logger"
 	"strings"
+	"time"
 )
 
 func main() {
-	phoneBook := make(map[string]string)
+	phoneBook := make(book.PhoneBook)
 
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("PhoneBook")
-	fmt.Println("Available commands: add,get,update,list,exit")
+	fmt.Println("Welcome to the Phonebook")
+	fmt.Println("Available commands: add, get, delete, update, list, exit")
 
 	for {
 		fmt.Print("> ")
@@ -23,63 +27,122 @@ func main() {
 		// exemple : add ~ alice=123
 		parts := strings.SplitN(line, " ", 2)
 		command := parts[0]
+		args := parts[1:]
 
 		switch command {
 		case "add":
-			kv := strings.SplitN(parts[1], "=", 2)
-			if len(kv) != 2 {
-				fmt.Println("Invalid format. Use: add name=number")
-				continue
-			}
-			name, number := kv[0], kv[1]
-			phoneBook[name] = number
-			fmt.Printf("Added/Updated: %s -> %s\n", name, number)
+			handleCommand(doAdd, args, phoneBook)
 		case "get":
-			// get alice
-			name := parts[1]
-			number, exists := phoneBook[name]
-			if exists {
-				fmt.Printf("Number for %s is %s\n", name, number)
-			} else {
-				fmt.Printf("No entry found for %s\n", name)
-			}
+			handleCommand(doGet, args, phoneBook)
 		case "delete":
-			name := parts[1]
-			_, exists := phoneBook[name]
-			if exists {
-				delete(phoneBook, name)
-				fmt.Printf("Deleted entry for %s\n", name)
-			} else {
-				fmt.Printf("No entry to delete for %s\n", name)
-			}
+			handleCommand(doDelete, args, phoneBook)
 		case "update":
-			//update alise=123456456
-			kv := strings.SplitN(parts[1], "=", 2)
-			if len(kv) != 2 {
-				fmt.Println("Invalid format. Use: update name=number")
-				continue
-			}
-			name, newNumber := kv[0], kv[1]
-			_, exists := phoneBook[name]
-			if exists {
-				phoneBook[name] = newNumber
-				fmt.Printf("Updated %s -> %s\n", name, newNumber)
-			} else {
-				fmt.Println("No such entry to update.")
-			}
+			handleCommand(doUpdate, args, phoneBook)
 		case "list":
-			if len(phoneBook) == 0 {
-				fmt.Println("Phonebook is empty.")
-			} else {
-				for name, number := range phoneBook {
-					fmt.Printf("%s -> %s\n", name, number)
-				}
-			}
+			handleCommand(doList, args, phoneBook)
 		case "exit":
-			fmt.Println("Exiting phonebook ...")
+			logger.Info("Exiting phonebook ...")
 			return
 		default:
-			fmt.Println("Unsupported command. Try 'add', 'get', 'update', 'delete', 'list','exit'.")
+			logger.Warn(errors.New("unsupported command. Try 'add', 'get', 'update', 'delete', 'list','exit'"))
 		}
 	}
+}
+
+func handleCommand(cmd func([]string, book.PhoneBook) error, args []string, phoneBook book.PhoneBook) {
+	if err := cmd(args, phoneBook); err != nil {
+		logger.Warn(err, "command failed")
+	}
+}
+
+func doDelete(args []string, phoneBook book.PhoneBook) error {
+	if len(args) < 1 {
+		return errors.New("missing parametrs for 'delete' command. Use: delete name")
+	}
+	name := args[0]
+
+	err := phoneBook.Delete(name)
+	if err != nil {
+		return err
+	}
+
+	logger.Info(fmt.Sprintf("Deleted entry for %s\n", name))
+	return nil
+}
+
+func doUpdate(args []string, phoneBook book.PhoneBook) error {
+	if len(args) < 1 {
+		return errors.New("missing parameters for 'update' command. Use: update name=new_number")
+	}
+
+	kv := strings.SplitN(args[0], "=", 2)
+	if len(kv) != 2 {
+		return errors.New("invalid format. Use: update name=number")
+	}
+	name, newNumber := kv[0], kv[1]
+
+	err := phoneBook.Update(name, newNumber)
+	if err != nil {
+		return err
+	}
+
+	logger.Info(fmt.Sprintf("Updated an entry: %s -> %s\n", name, newNumber))
+	return nil
+}
+
+func doList(_ []string, phoneBook book.PhoneBook) error {
+	if len(phoneBook) == 0 {
+		return errors.New("phonebook is empty")
+	} else {
+		results := ""
+
+		for name, number := range phoneBook {
+			results += fmt.Sprintf("%s -> %s\n", name, number.Number)
+		}
+		logger.Info(results)
+	}
+	return nil
+}
+
+func doGet(args []string, phoneBook book.PhoneBook) error {
+	if len(args) < 1 {
+		return errors.New("missing parameters for 'get' command. Use: get name")
+	}
+	name := args[0]
+
+	numberData, err := phoneBook.Get(name)
+	if err != nil {
+		return err
+	}
+
+	unixUpdatedAt := time.Unix(numberData.LastUpdateAt, 0)
+
+	logger.Info(
+		fmt.Sprintf("Number for %s is %s (last updated at %s)\n",
+			name,
+			numberData.Number,
+			unixUpdatedAt.Format("2006-01-02 15:04:05"),
+		),
+	)
+	return nil
+}
+
+func doAdd(args []string, phoneBook book.PhoneBook) error {
+	if len(args) < 1 {
+		return errors.New("missing paramerers for 'add' command. Use: add name number")
+	}
+
+	kv := strings.SplitN(args[0], "=", 2)
+	if len(kv) != 2 {
+		return errors.New("invalid format. Use: add name=number")
+	}
+
+	name, number := kv[0], kv[1]
+	err := phoneBook.Add(name, number)
+	if err != nil {
+		return err
+	}
+
+	logger.Info(fmt.Sprintf("Added an entry: %s -> %s\n", name, number))
+	return nil
 }
